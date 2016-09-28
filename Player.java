@@ -45,7 +45,7 @@ public class Player {
         // return lNextStates.elementAt(random.nextInt(lNextStates.size()));
         int bestIndex = 0;
         int index = 0;
-        int depth = 8;
+        int depth = 9;
         double beta = Integer.MAX_VALUE;
         double alpha = Integer.MIN_VALUE;
         double v = Integer.MIN_VALUE;
@@ -82,11 +82,10 @@ public class Player {
 
             index++;
         }
-
         return lNextStates.get(bestIndex);
     }
 
-    public double gama2(GameState gameState, boolean myTurnToPlay) {
+    public double gama2(GameState gameState, boolean myTurnToPlay, boolean verbose) {
 
         if (gameState.isRedWin()) {
             if (idPlayer == Constants.CELL_RED) {
@@ -101,96 +100,111 @@ public class Player {
                 return Integer.MIN_VALUE;
             }
         } else {
-            int safetyPlayer = 0;
-            int safetyOpponent = 0;
-            int nbCheckersPlayer = 0;
-            int nbCheckersOpponent = 0;
+            double safetyPlayer = 0;
+            double safetyOpponent = 0;
+            double positionValuePlayer = 0;
+            double positionValueOppo = 0;
+            double nbCheckersPlayer = 0;
+            double nbCheckersOpponent = 0;
+            double valueKing = 3;
+            int distanceToKingPlayer = 7 * 12;
+            int distanceToKingOppo = 7 * 12;
+
             for (int i = 0; i < 8; i++) {
-                for (int j = 0; j < 4; j++) {
+                for (int j = 0; j < 8; j++) {
                     if (gameState.get(i, j) == idPlayer) {
-                        safetyPlayer += checkSafety(i, j, idPlayer, kingPlayer, gameState, myTurnToPlay);
+                        positionValuePlayer += positionValue(i, j);
+//                        safetyPlayer += checkSafety(i, j, idPlayer, kingPlayer, gameState);
                         nbCheckersPlayer++;
+
+                        if (idPlayer == Constants.CELL_RED) {
+                            distanceToKingPlayer -= i;
+                        } else {
+                            distanceToKingPlayer -= (7 - i);
+                        }
+
                     } else if (gameState.get(i, j) == kingPlayer) {
-                        safetyPlayer += checkSafety(i, j, idPlayer, kingPlayer, gameState, myTurnToPlay);
-                        nbCheckersPlayer += 10;
+                        if (verbose) {
+                            System.err.println("King P  " + i + "," + j);
+                        }
+                        positionValuePlayer += positionValue(i, j);
+//                        safetyPlayer += checkSafety(i, j, idPlayer, kingPlayer, gameState);
+                        nbCheckersPlayer += valueKing;
+                        distanceToKingPlayer -= 7;
                     } else if (gameState.get(i, j) == idOpponent) {
-                        safetyOpponent += checkSafety(i, j, idOpponent, kingOpponent, gameState, !myTurnToPlay);
+                        positionValueOppo += positionValue(i, j);
+//                        safetyOpponent += checkSafety(i, j, idOpponent, kingOpponent, gameState);
                         nbCheckersOpponent++;
+                        if (idOpponent == Constants.CELL_RED) {
+                            distanceToKingOppo -= i;
+                        } else {
+                            distanceToKingOppo -= (7 - i);
+                        }
+
                     } else if (gameState.get(i, j) == kingOpponent) {
-                        safetyOpponent += checkSafety(i, j, idOpponent, kingOpponent, gameState, !myTurnToPlay);
-                        nbCheckersOpponent += 10;
+                        if (verbose) {
+                            System.err.println("King O  " + i + "," + j);
+                        }
+                        positionValueOppo += positionValue(i, j);
+//                        safetyOpponent += checkSafety(i, j, idOpponent, kingOpponent, gameState);
+                        nbCheckersOpponent += valueKing;
+                        distanceToKingOppo -= 7;
                     }
 
                 }
             }
-            return ((nbCheckersPlayer - nbCheckersOpponent) + (safetyPlayer - safetyOpponent));
+            return (nbCheckersPlayer - nbCheckersOpponent) + positionValuePlayer - positionValueOppo +distanceToKingOppo -distanceToKingPlayer;//+ safetyPlayer -safetyOpponent;
         }
         return 0;
 
     }
 
-    public double checkSafety(int row, int col, int checkers, int checkersKings, GameState gameState, boolean myTurnToPlay) {
+    public double positionValue(int row, int col) {
+
+        double[][] caseValue
+                = {{0, 1, 0, 1, 0, 1, 0, 1},
+                {1, 0, 0, 0, 0, 0, 0, 0},
+                {0, 0, 0, 0, 0, 0, 0, 1},
+                {1, 0, 0, 0, 0, 0, 0, 0},
+                {0, 0, 0, 0, 0, 0, 0, 1},
+                {1, 0, 0, 0, 0, 0, 0, 0},
+                {0, 0, 0, 0, 0, 0, 0, 1},
+                {1, 0, 1, 0, 1, 0, 1, 0}};
+
+        return caseValue[row][col];
+    }
+
+    public double checkSafety(int row, int col, int checkers, int checkersKings, GameState gameState) {
         int safetyValue = 0;
         double weight1 = 1;
         double weight2 = 10;
         // If we are on the side of the board we are protect
-        if (row - 1 < 0 || row + 1 > 7 || col - 1 < 0 || col + 1 > 3) {
+        if (row - 1 < 0 || row + 1 > 7 || col - 1 < 0 || col + 1 > 7) {
             return 1;
         }
 
-        // If row impair
-        if (row % 2 != 0) {
-            // Check first diagonal
-            if (gameState.get(row - 1, col - 1) == checkers || gameState.get(row - 1, col - 1) == checkersKings) {
-                safetyValue += weight1;
-            } else if (!(gameState.get(row - 1, col - 1) == Constants.CELL_EMPTY) && !myTurnToPlay) {
-                return 0;
-            }
-
-            if (gameState.get(row + 1, col) == checkers || gameState.get(row + 1, col) == checkersKings) {
-                safetyValue += weight1;
-            } else if (!(gameState.get(row + 1, col) == Constants.CELL_EMPTY) && !myTurnToPlay) {
-                return 0;
-            }
-            // Check the second
-            if (gameState.get(row + 1, col - 1) == checkers || gameState.get(row + 1, col - 1) == checkersKings) {
-                safetyValue += weight2;
-            } else if (!(gameState.get(row + 1, col - 1) == Constants.CELL_EMPTY) && !myTurnToPlay) {
-                return 0;
-            }
-
-            if (gameState.get(row - 1, col) == checkers || gameState.get(row - 1, col) == checkersKings) {
-                safetyValue += weight2;
-            } else if (!(gameState.get(row - 1, col) == Constants.CELL_EMPTY) && !myTurnToPlay) {
-                return 0;
-            }
-
-        } else {
-            // Check first diagonal
-            if (gameState.get(row - 1, col) == checkers || gameState.get(row - 1, col) == checkersKings) {
-                safetyValue += weight1;
-            } else if (!(gameState.get(row - 1, col) == Constants.CELL_EMPTY) && !myTurnToPlay) {
-                return 0;
-            }
-
-            if (gameState.get(row + 1, col + 1) == checkers || gameState.get(row + 1, col + 1) == checkersKings) {
-                safetyValue += weight1;
-            } else if (!(gameState.get(row + 1, col + 1) == Constants.CELL_EMPTY) && !myTurnToPlay) {
-                return 0;
-            }
-            // Check the second
-            if (gameState.get(row - 1, col + 1) == checkers || gameState.get(row - 1, col + 1) == checkersKings) {
-                safetyValue += weight2;
-            } else if (!(gameState.get(row - 1, col + 1) == Constants.CELL_EMPTY) && !myTurnToPlay) {
-                return 0;
-            }
-            if (gameState.get(row + 1, col) == checkers || gameState.get(row + 1, col) == checkersKings) {
-                safetyValue += weight2;
-            } else if (!(gameState.get(row + 1, col) == Constants.CELL_EMPTY) && !myTurnToPlay) {
-                return 0;
-            }
+        // Check first diagonal
+        if (gameState.get(row - 1, col - 1) == checkers || gameState.get(row - 1, col - 1) == checkersKings) {
+            safetyValue += weight1;
         }
-        return safetyValue >= 10 ? 1 : safetyValue > 0 ? 0.5 : 0;
+
+        if (gameState.get(row + 1, col + 1) == checkers || gameState.get(row + 1, col + 1) == checkersKings) {
+            safetyValue += weight1;
+        }
+        // Check the second
+        if (gameState.get(row - 1, col + 1) == checkers || gameState.get(row - 1, col + 1) == checkersKings) {
+            safetyValue += weight2;
+        }
+        if (gameState.get(row + 1, col - 1) == checkers || gameState.get(row + 1, col - 1) == checkersKings) {
+            safetyValue += weight2;
+        }
+
+        if (safetyValue == 11 || safetyValue == 21 || safetyValue == 12 || safetyValue == 22) {
+            return 1;
+        } else if (safetyValue == 1 || safetyValue == 2 || safetyValue == 10 || safetyValue == 20) {
+            return 0.5;
+        }
+        return 0;
     }
 
     public double alphaBeta(GameState gameState, int depth, double alpha, double beta, boolean myTurnToPlay, Deadline deadline) {
@@ -199,89 +213,59 @@ public class Player {
         gameState.findPossibleMoves(nextStates);
 
         if (nextStates.isEmpty() || gameState.isEOG() || depth == 0 || deadline.timeUntil() < 1000) {
-            return gama2(gameState, myTurnToPlay);
+            return gama2(gameState, myTurnToPlay, false);
         }
         double v;
 
         if (myTurnToPlay) {
             v = Integer.MIN_VALUE;
 
-            // Ordering moves -> that way we have more chance to prune the tree
-            HashMap<Double, ArrayList<GameState>> cache = new HashMap<>();
             for (GameState newGameState : nextStates) {
-                double val = gama2(newGameState, myTurnToPlay);
-                if (cache.get(Integer.MAX_VALUE - val) == null) {
-                    // we use Max_Value - val in order that the maxmimum value of alpha will be the first element of the set list
-                    // se we can iterate from maximimum to minimum
-                    cache.put(Integer.MAX_VALUE - val, new ArrayList<GameState>());
+
+                double alphaBetaVal;
+                if (valuesAlphaBeta.containsKey(newGameState.hashCode())) {
+                    alphaBetaVal = valuesAlphaBeta.get(newGameState.hashCode());
+                } else {
+                    alphaBetaVal = alphaBeta(newGameState, depth, alpha, beta, !myTurnToPlay, deadline);
+                    valuesAlphaBeta.put(newGameState.hashCode(), alphaBetaVal);
                 }
-                cache.get(Integer.MAX_VALUE - val).add(newGameState);
-            }
-
-            Iterator<Double> it = cache.keySet().iterator();
-
-            while (it.hasNext()) {
-                Double itValue = it.next();
-                for (GameState newGameState : cache.get(itValue)) {
-                    double alphaBetaVal;
-                    if (valuesAlphaBeta.containsKey(newGameState.hashCode())) {
-                        alphaBetaVal = valuesAlphaBeta.get(newGameState.hashCode());
-                    } else {
-                        alphaBetaVal = alphaBeta(newGameState, depth, alpha, beta, !myTurnToPlay, deadline);
-                        valuesAlphaBeta.put(newGameState.hashCode(), alphaBetaVal);
-                        valuesAlphaBeta.put(newGameState.reversed().hashCode(), alphaBetaVal);
-                    }
-                    if (alphaBetaVal > v) {
-                        v = alphaBetaVal;
-                    }
-
-                    if (v > alpha) {
-                        alpha = v;
-                    }
-
-                    if (beta <= alpha) {
-                        break;
-                    }
-
+                if (alphaBetaVal > v) {
+                    v = alphaBetaVal;
                 }
+
+                if (v > alpha) {
+                    alpha = v;
+                }
+
+                if (beta <= alpha) {
+                    break;
+                }
+
             }
         } else {
             v = Integer.MAX_VALUE;
-            // Ordering moves
-            HashMap<Double, ArrayList<GameState>> cache = new HashMap<>();
+
             for (GameState newGameState : nextStates) {
-                Double val = gama2(newGameState, myTurnToPlay);
-                if (cache.get(val) == null) {
-                    cache.put(val, new ArrayList<GameState>());
+                double alphaBetaVal;
+
+                if (valuesAlphaBeta.containsKey(newGameState.hashCode())) {
+                    alphaBetaVal = valuesAlphaBeta.get(newGameState.hashCode());
+                } else {
+                    alphaBetaVal = alphaBeta(newGameState, depth, alpha, beta, !myTurnToPlay, deadline);
+                    valuesAlphaBeta.put(newGameState.hashCode(), alphaBetaVal);
                 }
-                cache.get(val).add(newGameState);
-            }
-            Iterator<Double> it = cache.keySet().iterator();
-            while (it.hasNext()) {
-                Double itValue = it.next();
-                for (GameState newGameState : cache.get(itValue)) {
-                    double alphaBetaVal;
-
-                    if (valuesAlphaBeta.containsKey(newGameState.hashCode())) {
-                        alphaBetaVal = valuesAlphaBeta.get(newGameState.hashCode());
-                    } else {
-                        alphaBetaVal = alphaBeta(newGameState, depth, alpha, beta, !myTurnToPlay, deadline);
-                        valuesAlphaBeta.put(newGameState.hashCode(), alphaBetaVal);
-                        valuesAlphaBeta.put(newGameState.reversed().hashCode(), alphaBetaVal);
-                    }
-                    if (alphaBetaVal < v) {
-                        v = alphaBetaVal;
-                    }
-
-                    if (v < beta) {
-                        beta = v;
-                    }
-
-                    if (beta <= alpha) {
-                        break;
-                    }
-
+                if (alphaBetaVal < v) {
+                    v = alphaBetaVal;
                 }
+
+                if (v < beta) {
+                    beta = v;
+                }
+
+                if (beta <= alpha) {
+                    break;
+                }
+
             }
 
         }
