@@ -106,7 +106,8 @@ public class Player {
             double positionValueOppo = 0;
             double nbCheckersPlayer = 0;
             double nbCheckersOpponent = 0;
-            double valueKing = 3;
+            double valueKing = 5;
+            double valueCheckers = 3;
             int distanceToKingPlayer = 7 * 12;
             int distanceToKingOppo = 7 * 12;
 
@@ -114,8 +115,7 @@ public class Player {
                 for (int j = 0; j < 8; j++) {
                     if (gameState.get(i, j) == idPlayer) {
                         positionValuePlayer += positionValue(i, j);
-//                        safetyPlayer += checkSafety(i, j, idPlayer, kingPlayer, gameState);
-                        nbCheckersPlayer++;
+                        nbCheckersPlayer += valueCheckers;
 
                         if (idPlayer == Constants.CELL_RED) {
                             distanceToKingPlayer -= i;
@@ -128,13 +128,12 @@ public class Player {
                             System.err.println("King P  " + i + "," + j);
                         }
                         positionValuePlayer += positionValue(i, j);
-//                        safetyPlayer += checkSafety(i, j, idPlayer, kingPlayer, gameState);
+
                         nbCheckersPlayer += valueKing;
                         distanceToKingPlayer -= 7;
                     } else if (gameState.get(i, j) == idOpponent) {
                         positionValueOppo += positionValue(i, j);
-//                        safetyOpponent += checkSafety(i, j, idOpponent, kingOpponent, gameState);
-                        nbCheckersOpponent++;
+                        nbCheckersOpponent += valueCheckers;
                         if (idOpponent == Constants.CELL_RED) {
                             distanceToKingOppo -= i;
                         } else {
@@ -146,14 +145,13 @@ public class Player {
                             System.err.println("King O  " + i + "," + j);
                         }
                         positionValueOppo += positionValue(i, j);
-//                        safetyOpponent += checkSafety(i, j, idOpponent, kingOpponent, gameState);
                         nbCheckersOpponent += valueKing;
                         distanceToKingOppo -= 7;
                     }
 
                 }
             }
-            return (nbCheckersPlayer - nbCheckersOpponent) + positionValuePlayer - positionValueOppo +distanceToKingOppo -distanceToKingPlayer;//+ safetyPlayer -safetyOpponent;
+            return (nbCheckersPlayer - nbCheckersOpponent) + positionValuePlayer - positionValueOppo + distanceToKingOppo - distanceToKingPlayer;//+ safetyPlayer -safetyOpponent;
         }
         return 0;
 
